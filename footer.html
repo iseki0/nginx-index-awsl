@@ -1,0 +1,72 @@
+</body>
+<script>
+    (() => {
+        const detailPattern = /([0-9]+-[A-Za-z]+-[0-9]{4}) ([0-9:]+)\s+(-|[0-9]+)/s
+
+        function parsePage() {
+            const content = document.querySelector('pre')
+            const list = []
+            content.childNodes.forEach(it => {
+                if (it.nodeType === Node.ELEMENT_NODE && it.tagName === 'A') {
+                    const url = it.getAttribute('href')
+                    const filename = decodeURIComponent(url)
+                    const obj = {
+                        url: url,
+                        filename: filename
+                    }
+                    list.push(obj)
+                } else if (it.nodeType === Node.TEXT_NODE && list.length > 0) {
+                    const rawText = it.wholeText
+                    const d = parseDetailString(rawText)
+                    if (d !== null) {
+                        list[list.length - 1].detail = d
+                    }
+                }
+            })
+            return list
+        }
+
+        function parseDetailString(s) {
+            const g = s.match(detailPattern)
+            if (g === null) return null
+            return {
+                date: g[1],
+                time: g[2],
+                size: g[3]
+            }
+        }
+
+        function joinToTable(list) {
+            let prefix = `<div class="mdui-table-fluid">
+        <table class="mdui-table mdui-table-hoverable">
+          <thead>
+            <tr>
+              <th>FileName</th>
+              <th>Datetime</th>
+              <th>Size</th>
+            </tr>
+          </thead><tbody>`
+
+
+            let postfix = `    </tbody>
+          </table>
+        </div>`
+            return prefix + list.map(it => renderLine(it)).join('') + postfix
+        }
+
+        function renderLine(e) {
+            return `<tr>
+        <td><a href="${e.url}">${e.filename}</a></td>
+        <td>${e?.detail?.date} ${e?.detail?.time}</td>
+        <td>${e?.detail?.size}</td>
+      </tr>
+    `
+        }
+        const list = parsePage()
+        const h1 = document.querySelector('h1').innerHTML
+        document.querySelector('body').innerHTML = `<h1>${h1}</h1>` + joinToTable(list)
+    })()
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mdui@1.0.1/dist/js/mdui.min.js" integrity="sha384-gCMZcshYKOGRX9r6wbDrvF+TcCCswSHFucUzUPwka+Gr+uHgjlYvkABr95TCOz3A" crossorigin="anonymous"></script>
+
+</html>
